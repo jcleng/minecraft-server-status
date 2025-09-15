@@ -1,4 +1,6 @@
 <?php
+ini_set('date.timezone', 'Asia/Shanghai');
+
 require_once './vendor/autoload.php';
 
 use xPaw\MinecraftPing;
