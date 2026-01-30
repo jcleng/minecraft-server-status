@@ -386,7 +386,7 @@ $serverStatus = getMinecraftServerStatus();
                     <?php if ($serverStatus['online']) : ?>
                         <p><strong>版本:</strong> <?= htmlspecialchars($serverStatus['data']['version']['name'] ?? '未知') ?></p>
                         <p><strong>协议:</strong> <?= htmlspecialchars($serverStatus['data']['version']['protocol'] ?? '未知') ?></p>
-                        <p><strong>描述:</strong> <?= htmlspecialchars($serverStatus['data']['description']['text'] ?? '') ?></p>
+                        <p><strong>描述:</strong> <?= ($serverStatus['data']['description'] ?? '') ?></p>
                     <?php else : ?>
                         <p>服务器离线，无法获取信息</p>
                     <?php endif; ?>
@@ -470,6 +470,20 @@ $serverStatus = getMinecraftServerStatus();
         <button class="refresh-btn" onclick="window.location.reload()">
             <i class="fas fa-sync-alt"></i> 刷新状态
         </button>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <h2 class="card-title">原始数据</h2>
+            </div>
+            <div class="card-content" style="overflow: scroll;">
+                <pre>
+<?php
+echo json_encode($serverStatus['data'], 256 + 128 + 64);
+                ?>
+            </div>
+        </div>
 
         <div class="footer">
             <p>Minecraft 服务器状态监控面板 &copy; <?= date('Y') ?></p>
