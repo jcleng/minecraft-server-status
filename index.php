@@ -5,6 +5,11 @@ require_once './vendor/autoload.php';
 
 use xPaw\MinecraftPing;
 use xPaw\MinecraftPingException;
+
+$MODE_PATH = getenv('MODE_PATH');
+if (empty($MODE_PATH)) {
+    $MODE_PATH = '/home/jcleng/.var/app/org.polymc.PolyMC/data/PolyMC/instances/1.20.4/.minecraft/mods/';
+}
 // 服务器状态获取函数
 function getMinecraftServerStatus()
 {
@@ -33,6 +38,90 @@ function getMinecraftServerStatus()
 
 // 获取服务器状态
 $serverStatus = getMinecraftServerStatus();
+
+// ! 文件下载
+// 安全检查：防止目录遍历攻击
+function sanitizePath($path)
+{
+    $path = str_replace('..', '', $path);
+    $path = trim($path, '/\\');
+    return $path;
+}
+
+// 获取文件列表
+function getFileList($directory)
+{
+    if (!empty($_GET['action']) && $_GET['action'] == 'browse' && !empty($_GET['dir'])) {
+        $directory = $directory . '/' . $_GET['dir'];
+    }
+    $files = [];
+    if (!is_dir($directory)) {
+        return $files;
+    }
+
+    $items = scandir($directory);
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+
+        $fullPath = $directory . '/' . $item;
+        $relativePath = sanitizePath($item);
+
+        $files[] = [
+            'name' => $item,
+            'path' => $relativePath,
+            'full_path' => $fullPath,
+            'is_dir' => is_dir($fullPath),
+            'size' => is_file($fullPath) ? filesize($fullPath) : '-',
+            'modified' => date('Y-m-d H:i:s', filemtime($fullPath)),
+            'download_url' => 'download.php?file=' . urlencode($relativePath)
+        ];
+    }
+
+    // 排序：文件夹在前，然后按名称排序
+    usort($files, function ($a, $b) {
+        if ($a['is_dir'] && !$b['is_dir']) return -1;
+        if (!$a['is_dir'] && $b['is_dir']) return 1;
+        return strcmp($a['name'], $b['name']);
+    });
+
+    return $files;
+}
+
+// 格式化文件大小
+function formatFileSize($bytes)
+{
+    if ($bytes == '-') return '-';
+    $units = ['B', 'KB', 'MB', 'GB'];
+    $bytes = max($bytes, 0);
+    $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+    $pow = min($pow, count($units) - 1);
+    $bytes /= pow(1024, $pow);
+    return round($bytes, 2) . ' ' . $units[$pow];
+}
+
+// 处理下载请求
+if (isset($_GET['action']) && $_GET['action'] === 'download' && isset($_GET['file'])) {
+    $fileName = sanitizePath($_GET['file']);
+    $filePath = $MODE_PATH . '/' . $fileName;
+
+    if (file_exists($filePath) && is_file($filePath)) {
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . basename($filePath) . '"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($filePath));
+        readfile($filePath);
+        exit;
+    } else {
+        http_response_code(404);
+        echo "文件不存在";
+        exit;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -475,13 +564,100 @@ $serverStatus = getMinecraftServerStatus();
                 <div class="card-icon">
                     <i class="fas fa-info-circle"></i>
                 </div>
+                <h2 class="card-title">服务器Mod</h2>
+            </div>
+            <div class="card-content">
+                <?php
+                // 获取文件列表
+                $result = getFileList($MODE_PATH);
+
+                if (isset($result['error'])) {
+                    echo '<div class="empty-state">';
+                    echo '<i class="fas fa-exclamation-triangle"></i>';
+                    echo '<div>' . htmlspecialchars($result['error']) . '</div>';
+                    echo '</div>';
+                } else {
+                    $files = $result;
+
+                    // 统计信息
+                    $totalFiles = count(array_filter($files, function ($f) {
+                        return !$f['is_dir'];
+                    }));
+                    $totalFolders = count(array_filter($files, function ($f) {
+                        return $f['is_dir'];
+                    }));
+                ?>
+                    <div class="stats-bar">
+                        <span>共 <?php echo $totalFiles + $totalFolders; ?> 项 (<?php echo $totalFolders; ?> 个文件夹, <?php echo $totalFiles; ?> 个文件)</span>
+                        <span>目录: <?php echo htmlspecialchars(basename($MODE_PATH)) . '/' . ($_GET['dir'] ?? ''); ?></span>
+                    </div>
+
+                    <?php if (empty($files)) : ?>
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open"></i>
+                            <div>目录为空</div>
+                        </div>
+                    <?php else : ?>
+                        <table class="file-table">
+                            <thead>
+                                <tr>
+                                    <th>文件名</th>
+                                    <th>大小</th>
+                                    <th>修改时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($files as $file) : ?>
+                                    <tr>
+                                        <td>
+                                            <?php if ($file['is_dir']) : ?>
+                                                <i class="fas fa-folder file-icon folder-icon"></i>
+                                                <span class="file-name">
+                                                    <a href="?action=browse&dir=<?php echo urlencode($file['path']); ?>" title="浏览文件夹">
+                                                        <?php echo htmlspecialchars($file['name']); ?>
+                                                    </a>
+                                                </span>
+                                            <?php else : ?>
+                                                <i class="fas fa-file file-icon file-type-icon"></i>
+                                                <span class="file-name"><?php echo htmlspecialchars($file['name']); ?></span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="file-size">
+                                            <?php echo $file['is_dir'] ? '-' : formatFileSize($file['size']); ?>
+                                        </td>
+                                        <td class="file-date">
+                                            <?php echo $file['modified']; ?>
+                                        </td>
+                                        <td>
+                                            <?php if (!$file['is_dir']) : ?>
+                                                <a href="?action=download&file=<?php echo urlencode($file['path']); ?>" class="btn-download" onclick="return confirmDownload('<?php echo htmlspecialchars(addslashes($file['name'])); ?>')">
+                                                    <i class="fas fa-download"></i> 下载
+                                                </a>
+                                            <?php else : ?>
+                                                <span style="color: #999; font-size: 12px;">文件夹</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                <?php } ?>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
                 <h2 class="card-title">原始数据</h2>
             </div>
             <div class="card-content" style="overflow: scroll;">
                 <pre>
 <?php
 echo json_encode($serverStatus['data'], 256 + 128 + 64);
-                ?>
+?>
             </div>
         </div>
 
@@ -492,6 +668,10 @@ echo json_encode($serverStatus['data'], 256 + 128 + 64);
     </div>
 
     <script>
+        // 下载确认
+        function confirmDownload(filename) {
+            return confirm('确定要下载文件 "' + filename + '" 吗？');
+        }
         // 自动刷新页面（每60秒）
         setTimeout(function() {
             window.location.reload();
