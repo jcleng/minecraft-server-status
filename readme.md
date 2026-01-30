@@ -1,6 +1,7 @@
 ### minecraft服务器状态查看
 
 ![./img/dingtalkgov_qt_clipbord_pic_2.png](./img/dingtalkgov_qt_clipbord_pic_2.png)
+![./img/20260130113222_129.jpg](./img/20260130113222_129.jpg)
 
 ```shell
 # 运行
