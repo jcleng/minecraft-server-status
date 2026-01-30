@@ -426,6 +426,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'download' && isset($_GET['fil
                 height: 100px;
             }
         }
+        a {
+            color: var(--primary);
+        }
     </style>
 </head>
 
@@ -566,7 +569,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'download' && isset($_GET['fil
                 </div>
                 <h2 class="card-title">服务器Mod</h2>
             </div>
-            <div class="card-content">
+            <div class="card-content" style="overflow: scroll;">
                 <?php
                 // 获取文件列表
                 $result = getFileList($MODE_PATH);
@@ -598,7 +601,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'download' && isset($_GET['fil
                             <div>目录为空</div>
                         </div>
                     <?php else : ?>
-                        <table class="file-table">
+                        <table class="file-table" style="width: 100%;">
                             <thead>
                                 <tr>
                                     <th>文件名</th>
@@ -614,7 +617,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'download' && isset($_GET['fil
                                             <?php if ($file['is_dir']) : ?>
                                                 <i class="fas fa-folder file-icon folder-icon"></i>
                                                 <span class="file-name">
-                                                    <a href="?action=browse&dir=<?php echo urlencode($file['path']); ?>" title="浏览文件夹">
+                                                    <a href="?action=browse&dir=<?php echo urlencode(str_replace($MODE_PATH, '', $file['full_path'])); ?>" title="浏览文件夹">
                                                         <?php echo htmlspecialchars($file['name']); ?>
                                                     </a>
                                                 </span>
@@ -631,7 +634,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'download' && isset($_GET['fil
                                         </td>
                                         <td>
                                             <?php if (!$file['is_dir']) : ?>
-                                                <a href="?action=download&file=<?php echo urlencode($file['path']); ?>" class="btn-download" onclick="return confirmDownload('<?php echo htmlspecialchars(addslashes($file['name'])); ?>')">
+                                                <a href="?action=download&file=<?php echo urlencode(str_replace($MODE_PATH, '', $file['full_path'])); ?>" class="btn-download" onclick="return confirmDownload('<?php echo htmlspecialchars(addslashes($file['name'])); ?>')">
                                                     <i class="fas fa-download"></i> 下载
                                                 </a>
                                             <?php else : ?>
