@@ -10,5 +10,5 @@ docker run -d \
   -e SERVER_HOST=192.168.195.35 \
   -e SERVER_PORT=25565 \
   --name minecraft-server-status \
-  registry.cn-hangzhou.aliyuncs.com/jcleng/minecraft-server-status
+  registry.cn-hangzhou.aliyuncs.com/jcleng/jcleng-minecraft-server-status:latest
 ```
