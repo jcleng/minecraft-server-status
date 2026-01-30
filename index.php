@@ -562,7 +562,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'download' && isset($_GET['fil
         <button class="refresh-btn" onclick="window.location.reload()">
             <i class="fas fa-sync-alt"></i> 刷新状态
         </button>
-        <div class="card">
+        <div class="card" style="margin-bottom: 40px;">
             <div class="card-header">
                 <div class="card-icon">
                     <i class="fas fa-info-circle"></i>

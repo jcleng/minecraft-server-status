@@ -9,6 +9,7 @@ docker run -d \
   -p 8082:80 \
   -e SERVER_HOST=192.168.195.35 \
   -e SERVER_PORT=25565 \
+  -e MODE_PATH=/srv/mods \
   --name minecraft-server-status \
   registry.cn-hangzhou.aliyuncs.com/jcleng/jcleng-minecraft-server-status:latest
 ```
